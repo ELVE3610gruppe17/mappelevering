@@ -1,0 +1,324 @@
+MODULE CalibData
+    PERS tooldata SuctionCup:=[TRUE,[[0,0,90],[1,0,0,0]],[1,[0,0,1],[1,0,0,0],0,0,0]];
+ENDMODULE
+
+MODULE Chess_Robot
+    CONST string HOST_IP := "192.168.12.62";
+    CONST intnum PORT := 2222;
+    VAR socketdev server;
+    VAR socketdev client;
+    VAR string client_ip;
+    VAR rawbytes array;
+    VAR string x_from;
+    VAR string y_from;
+    VAR string x_to;
+    VAR string y_to;
+    VAR string special_case;
+    
+    VAR string x_taken;
+    VAR string y_taken;
+    
+    VAR string x_from_rook;
+    VAR string y_from_rook;
+    VAR string x_to_rook;
+    VAR string y_to_rook;
+    
+    VAR string x_from_sorter;
+    VAR string y_from_sorter;
+    VAR string x_to_sorter;
+    VAR string y_to_sorter;
+    
+    VAR bool thrashcan;
+    VAR num x_from_num;
+    VAR num y_from_num;
+    VAR num x_to_num;
+    VAR num y_to_num;
+    
+    VAR num x_taken_num;
+    VAR num y_taken_num;
+    
+    VAR num x_from_rook_num;
+    VAR num y_from_rook_num;
+    VAR num x_to_rook_num;
+    VAR num y_to_rook_num;
+    
+    VAR num x_from_sorter_num;
+    VAR num y_from_sorter_num;
+    VAR num x_to_sorter_num;
+    VAR num y_to_sorter_num;
+
+    
+    CONST num peice_height := 17;
+    CONST speeddata MoveL_speed := v100;
+    CONST speeddata MoveJ_speed := v1000;
+    
+    VAR robtarget move_from:=[[0,0,-15],[0,0.707106781,0.707106781,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    VAR robtarget move_to:=[[0,0,-15],[0,0.707106781,0.707106781,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    VAR robtarget move_from_rook:=[[0,0,-15],[0,0.707106781,0.707106781,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    VAR robtarget move_to_rook:=[[0,0,-15],[0,0.707106781,0.707106781,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    VAR robtarget move_taken:=[[0,0,-15],[0,0.707106781,0.707106781,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    
+    VAR robtarget move_from_sorter:=[[0,0,-15],[0,0.707106781,0.707106781,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    VAR robtarget move_to_sorter:=[[0,0,-15],[0,0.707106781,0.707106781,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    
+    CONST robtarget rest_position:=[[0,-400,100],[0,0.707106781,0.707106781,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    
+    VAR num taken_peices_count := 0;
+    VAR num x_storage := 377;
+    VAR num y_storage := 387;
+    VAR num z_storage := peice_height;
+    VAR bool negative_storage := FALSE;
+    
+    VAR num newarray;
+
+    VAR robtarget peice_storage:=[[0,0,15],[0,0.707106781,0.707106781,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    
+    PROC socket_server(string HOST_IP, intnum PORT)
+        SocketCreate server;  
+        SocketBind server, HOST_IP, PORT;
+        SocketListen server;
+        SocketAccept server, client, \ClientAddress:=client_ip,\Time:=600; 
+        TPWrite client_ip;
+        SocketSend client, \Str:="We are connected!";
+        
+        
+    ENDPROC
+    
+
+    
+ PROC recieve_variables()
+         SocketReceive client \Str:=special_case,\Time:=600;
+         TPWrite "special_case: " + special_case;
+         SocketSend client, \Str:="special_case recieved";
+         
+     IF special_case <> "q" THEN   
+         
+         SocketReceive client \Str:=x_to,\Time:=600;
+         thrashcan := StrToVal (x_to, x_to_num);
+         SocketSend client, \Str:="x_to recieved";
+         TPWrite "x_to: " + x_to;
+         
+         SocketReceive client \Str:=y_to,\Time:=600;
+         thrashcan := StrToVal (y_to, y_to_num);
+         SocketSend client, \Str:="y_to recieved";
+         TPWrite "y_to: " + y_to;
+         
+         SocketReceive client \Str:=x_from,\Time:=600;
+         thrashcan := StrToVal (x_from, x_from_num);
+         SocketSend client, \Str:="x_from recieved";
+         TPWrite "x_from: " + x_from;
+         
+         SocketReceive client \Str:=y_from,\Time:=600;
+         thrashcan := StrToVal (y_from, y_from_num);
+         SocketSend client, \Str:="y_from recieved";
+         TPWrite "y_from: " + y_from;
+         
+         IF special_case = "x" THEN
+             SocketSend client, \Str:=".";
+            SocketReceive client \Str:=x_taken,\Time:=600;
+             thrashcan := StrToVal (x_taken, x_taken_num);
+             SocketSend client, \Str:="x_taken recieved";
+             TPWrite "x_taken: " + x_taken;
+             
+             SocketReceive client \Str:=y_taken,\Time:=600;
+             thrashcan := StrToVal (y_taken, y_taken_num);
+             SocketSend client, \Str:="y_taken recieved";
+             TPWrite "y_taken: " + y_taken;
+             
+         ELSEIF special_case = "-" THEN
+             SocketSend client, \Str:=".";
+             SocketReceive client \Str:=x_to_rook,\Time:=600;
+             thrashcan := StrToVal (x_to_rook, x_to_rook_num);
+             SocketSend client, \Str:="x_to_rook recieved";
+             TPWrite "x_to_rook: " + x_to_rook;
+             
+             SocketReceive client \Str:=y_to_rook,\Time:=600;
+             thrashcan := StrToVal (y_to_rook, y_to_rook_num);
+             SocketSend client, \Str:="y_to_rook recieved";
+             TPWrite "y_to_rook: " + y_to_rook;
+             
+             SocketReceive client \Str:=x_from_rook,\Time:=600;
+             thrashcan := StrToVal (x_from_rook, x_from_rook_num);
+             SocketSend client, \Str:="x_from_rook recieved";
+             TPWrite "x_from_rook: " + x_from_rook;
+             
+             SocketReceive client \Str:=y_from_rook,\Time:=600;
+             thrashcan := StrToVal (y_from_rook, y_from_rook_num);
+             SocketSend client, \Str:="y_from_rook recieved";
+             TPWrite "y_from_rook: " + y_from_rook;
+     ELSEIF special_case = "s" THEN
+         SocketReceive client \Str:=x_from_sorter,\Time:=600;
+         thrashcan := StrToVal (x_from_sorter, x_from_sorter_num);
+         SocketSend client, \Str:="1/4";
+         
+         SocketReceive client \Str:=y_from_sorter,\Time:=600;
+         thrashcan := StrToVal (y_from_sorter, y_from_sorter_num);
+         SocketSend client, \Str:="2/4";
+         
+         SocketReceive client \Str:=x_to_sorter,\Time:=600;
+         thrashcan := StrToVal (x_to_sorter, x_to_sorter_num);
+         SocketSend client, \Str:="3/4";
+         
+         SocketReceive client \Str:=y_to_sorter,\Time:=600;
+         thrashcan := StrToVal (y_to_sorter, y_to_sorter_num);
+         SocketSend client, \Str:="4/4";
+         
+         WHILE special_case = "s" DO
+            SocketReceive client \Str:=special_case,\Time:=600;
+            TPWrite "special_case: " + special_case;
+            SocketSend client, \Str:="special_case recieved";
+            IF special_case = "s" THEN
+                SocketReceive client \Str:=x_from_sorter,\Time:=600;
+                thrashcan := StrToVal (x_from_sorter, x_from_sorter_num);
+                SocketSend client, \Str:="1/4";
+                
+                SocketReceive client \Str:=y_from_sorter,\Time:=600;
+                thrashcan := StrToVal (y_from_sorter, y_from_sorter_num);
+                SocketSend client, \Str:="2/4";
+                
+                SocketReceive client \Str:=x_to_sorter,\Time:=600;
+                thrashcan := StrToVal (x_to_sorter, x_to_sorter_num);
+                SocketSend client, \Str:="3/4";
+                         
+                SocketReceive client \Str:=y_to_sorter,\Time:=600;
+                thrashcan := StrToVal (y_to_sorter, y_to_sorter_num);
+                SocketSend client, \Str:="4/4";
+                
+                MoveJ Offs(move_from_sorter,0,0,100),MoveJ_speed,fine,SuctionCup\WObj:=wobj0;
+                MoveL move_from_sorter,MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+                Set DO10_1;
+                WaitTime 2;
+                MoveL Offs(move_from_sorter,0,0,100),MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+                
+                MoveJ Offs(move_to_sorter,0,0,100),MoveJ_speed,fine,SuctionCup\WObj:=wobj0;
+                MoveL move_to_sorter,MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+                Reset DO10_1;
+                WaitTime 2;
+                MoveL Offs(move_to_sorter,0,0,100),MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+                
+            ENDIF
+         ENDWHILE 
+    ENDIF
+ENDIF
+     
+        
+    ENDPROC
+
+PROC taken_peice_sorter()
+    peice_storage:=[[x_storage,y_storage,z_storage],[0,0.707106781,0.707106781,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+    
+    MoveJ Offs(peice_storage,0,0,100),MoveJ_speed,fine,SuctionCup\WObj:=wobj0;
+    MoveL peice_storage,MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+    Reset DO10_1;
+    WaitTime 2;
+    MoveL Offs(peice_storage,0,0,100),MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+        
+    
+    IF taken_peices_count = 0 THEN
+        taken_peices_count := taken_peices_count + 1;
+        z_storage := z_storage + 15;
+    
+    ELSEIF taken_peices_count = 7 THEN
+        y_storage := y_storage - 45;
+        negative_storage := TRUE;
+        taken_peices_count := taken_peices_count + 1;
+        
+    ELSEIF taken_peices_count MOD 2 = 1 THEN
+        IF negative_storage THEN 
+            x_storage := x_storage - 45;
+        ELSE
+            x_storage := x_storage + 45;
+        ENDIF 
+        z_storage := peice_height;
+        taken_peices_count := taken_peices_count + 1;
+        
+    ELSEIF taken_peices_count MOD 2 = 0 THEN
+        z_storage := z_storage + 15;
+        taken_peices_count := taken_peices_count + 1; 
+    ENDIF     
+        
+ENDPROC
+    
+PROC move_chess_peices()
+    IF special_case = "x" THEN
+        MoveJ Offs(move_taken,0,0,100),MoveJ_speed,fine,SuctionCup\WObj:=wobj0;
+        MoveL move_taken,MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+        Set DO10_1;
+        WaitTime 2;
+        MoveL Offs(move_taken,0,0,100),MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+        taken_peice_sorter;
+        
+        MoveJ Offs(move_from,0,0,100),MoveJ_speed,fine,SuctionCup\WObj:=wobj0;
+        MoveL move_from,MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+        Set DO10_1;
+        WaitTime 2;
+        MoveL Offs(move_from,0,0,100),MoveL_speed,fine,SuctionCup\WObj:=wobj0;  
+        MoveJ Offs(move_to,0,0,100),MoveJ_speed,fine,SuctionCup\WObj:=wobj0;
+        MoveL move_to,MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+        Reset DO10_1;
+        WaitTime 2;
+        MoveL Offs(move_to,0,0,100),MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+        
+    ELSEIF special_case = "-" THEN
+        MoveJ Offs(move_from,0,0,100),MoveJ_speed,fine,SuctionCup\WObj:=wobj0;
+        MoveL move_from,MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+        Set DO10_1;
+        WaitTime 2;
+        MoveL Offs(move_from,0,0,100),MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+        MoveJ Offs(move_to,0,0,100),MoveJ_speed,fine,SuctionCup\WObj:=wobj0;
+        MoveL move_to,MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+        Reset DO10_1;
+        WaitTime 2;
+        MoveL Offs(move_to,0,0,100),MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+        
+        MoveJ Offs(move_from_rook,0,0,100),MoveJ_speed,fine,SuctionCup\WObj:=wobj0;
+        MoveL move_from_rook,MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+        Set DO10_1;
+        WaitTime 2;
+        MoveL Offs(move_from_rook,0,0,100),MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+        MoveJ Offs(move_to_rook,0,0,100),MoveJ_speed,fine,SuctionCup\WObj:=wobj0;
+        MoveL move_to_rook,MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+        Reset DO10_1;
+        WaitTime 2;
+        MoveL Offs(move_to_rook,0,0,100),MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+        
+    ELSE
+        MoveJ Offs(move_from,0,0,100),MoveJ_speed,fine,SuctionCup\WObj:=wobj0;
+        MoveL move_from,MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+        Set DO10_1;
+        WaitTime 2;
+        MoveL Offs(move_from,0,0,100),MoveL_speed,fine,SuctionCup\WObj:=wobj0;  
+        MoveJ Offs(move_to,0,0,100),MoveJ_speed,fine,SuctionCup\WObj:=wobj0;
+        MoveL move_to,MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+        Reset DO10_1;
+        WaitTime 2;
+        MoveL Offs(move_to,0,0,100),MoveL_speed,fine,SuctionCup\WObj:=wobj0;
+        
+    ENDIF
+ENDPROC
+
+    PROC main()      
+        MoveJ rest_position,MoveJ_speed,fine,SuctionCup\WObj:=wobj0;
+        socket_server HOST_IP, PORT;
+        WHILE special_case <> "q" DO
+            recieve_variables;
+            move_from:=[[x_from_num,y_from_num,peice_height],[0,0.707106781,0.707106781,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+            move_to:=[[x_to_num,y_to_num,peice_height],[0,0.707106781,0.707106781,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+            move_from_rook:=[[x_from_rook_num,y_from_rook_num,peice_height],[0,0.707106781,0.707106781,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+            move_to_rook:=[[x_to_rook_num,y_to_rook_num,peice_height],[0,0.707106781,0.707106781,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]]; 
+            move_taken:=[[x_taken_num,y_taken_num,peice_height],[0,0.707106781,0.707106781,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]]; 
+            
+            move_from_sorter:=[[x_from_sorter_num,y_from_sorter_num,peice_height],[0,0.707106781,0.707106781,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+            move_to_sorter:=[[x_to_sorter_num,y_to_sorter_num,peice_height],[0,0.707106781,0.707106781,0],[0,0,0,0],[9E+09,9E+09,9E+09,9E+09,9E+09,9E+09]];
+            IF special_case <> "q" THEN
+                move_chess_peices;
+                MoveJ rest_position,MoveJ_speed,fine,SuctionCup\WObj:=wobj0;
+                SocketSend client, \Str:="I'm done! Waiting for next move. ";
+                
+            ENDIF 
+        ENDWHILE
+        
+        TPWrite "q recieved. Robot terminated";
+    ENDPROC
+
+ENDMODULE  
