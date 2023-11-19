@@ -1,0 +1,24 @@
+def unused_create_board(aruco_theta_x_y): #Need to make an offset for aruco_t_matrix so the grid starts offset.
+        board_coordinates = np.zeros([NUMBER_SQ,NUMBER_SQ,2],dtype=float)
+        aruco_t_matrix = transformation(aruco_theta_x_y[0],aruco_theta_x_y[1],aruco_theta_x_y[2])
+        offset_aruco_t_matrix = aruco_t_matrix.dot(transformation(0,ARUCO_TO_SQ,0))
+
+        #We're making an array containing all zeros.
+        #Each coordinate the array represents the centre of a square in the chessboard
+        #and contains x and y coordinate in refrence to a specified ArUco marker
+
+        for i in range(NUMBER_SQ):
+             for j in range(NUMBER_SQ):
+                  point_t_matrix = offset_aruco_t_matrix.dot(transformation(0,SQUARE_DISTANCE*j,SQUARE_DISTANCE*i))
+                  board_coordinates[j,i] = [point_t_matrix[0,2],point_t_matrix[1,2]]
+        return board_coordinates
+
+def unused_detect_marker(aruco_marker_array,board_array):
+     aruco_position_in_chessboard = np.array()
+     for i in range(NUMBER_SQ):
+          for j in range(NUMBER_SQ):
+               for k in range(aruco_marker_array):
+                    if board_array[i,j][0]-SQUARE_DISTANCE/2 <= aruco_marker_array[k][1] <= board_array[i,j][0] + SQUARE_DISTANCE/2:
+                        if board_array[i,j][1]-SQUARE_DISTANCE/2 <= aruco_marker_array[k][2] <= board_array[i,j][0] + SQUARE_DISTANCE/2:
+                            aruco_position_in_chessboard
+'''   
